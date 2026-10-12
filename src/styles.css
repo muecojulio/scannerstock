@@ -1012,8 +1012,9 @@
   }
 
   /* Píldora que se desliza al elemento activo del navegador inferior. La
-     cuadrícula reparte cuatro columnas iguales, así que basta con mover el
-     100% de su propio ancho por índice activo. */
+     cuadrícula reparte las columnas iguales (`--nav-count`, que pone
+     `app-frame.tsx`), así que basta con mover el 100% de su propio ancho por
+     índice activo. El 4 de reserva es el número de secciones de antes. */
   .nav-track {
     --nav-gutter: 0.5rem;
   }
@@ -1023,7 +1024,7 @@
     top: 0.5rem;
     bottom: calc(max(0.6rem, env(safe-area-inset-bottom)) + 0.15rem);
     left: var(--nav-gutter);
-    width: calc((100% - var(--nav-gutter) * 2) / 4);
+    width: calc((100% - var(--nav-gutter) * 2) / var(--nav-count, 4));
     border-radius: 1rem;
     background: linear-gradient(180deg, rgb(212 120 74 / 0.24), rgb(212 120 74 / 0.05));
     box-shadow: inset 0 0 0 1px rgb(212 120 74 / 0.4);
@@ -1046,17 +1047,30 @@
     z-index: 1;
     display: flex;
     min-height: 2.75rem;
+    min-width: 0;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 0.25rem;
     border-radius: 1rem;
     color: var(--color-stone);
-    font-size: 0.6875rem;
+    /* Seis secciones en un teléfono de 320 px dejan unos 50 px por columna:
+       la etiqueta más larga («Privacidad») cabe a 9,5 px y en pantallas
+       normales recupera los 11 px de siempre. */
+    font-size: clamp(0.59375rem, 2.75vw, 0.6875rem);
     font-weight: 500;
     transition:
       color 200ms var(--ease-smooth),
       transform 160ms var(--ease-snap);
+  }
+
+  /* La etiqueta nunca rompe la columna: si algún día no cupiera, se recorta en
+     lugar de desbordar sobre la sección vecina. */
+  .nav-label {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .nav-item[aria-current="page"] {
@@ -1189,6 +1203,27 @@
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
+  }
+
+  /* Tarjeta del QR: blanco puro y nada más. Es lo que mira una cámara, así que
+     no lleva adornos ni deja pasar el grano del fondo. El halo es de la casa
+     para que se vea que es una pieza de la app y no una imagen pegada. */
+  .qr-card {
+    display: grid;
+    place-items: center;
+    padding: 1rem;
+    border-radius: var(--radius-card);
+    background: #ffffff;
+    box-shadow: var(--shadow-glow-copper);
+  }
+
+  /* El SVG ya trae su zona de silencio (4 módulos) y un lado entero por módulo:
+     al escalarlo, los bordes siguen siendo rectos. */
+  .qr-image {
+    display: block;
+    width: 100%;
+    max-width: 17rem;
+    height: auto;
   }
 
   /* Barra de progreso fina (progreso de escaneo, distribución de veredictos) */
