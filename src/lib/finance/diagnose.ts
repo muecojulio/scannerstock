@@ -302,13 +302,13 @@ export function routeModel(input: {
     return { model: 1, reason: "Actividad comercial o tecnológica, no un banco tradicional." };
   }
   if (
-    /banco|bank|instituci[oó]n financiera|cr[eé]dito comercial|banca/.test(text) ||
+    /banco|bank|instituci[oó]n financiera|servicios financieros|cr[eé]dito comercial|banca/.test(text) ||
     (input.sic != null && ((input.sic >= 6020 && input.sic <= 6069) || (input.sic >= 6090 && input.sic <= 6099) || input.sic === 6712 || input.sic === 6211))
   ) {
     return { model: 2, reason: "Institución financiera tradicional según sector o SIC." };
   }
   if (
-    /utilit|el[eé]ctric|electric|agua potable|gas natural|energ[ií]a regulad|infraestruct/.test(text) ||
+    /utilit|el[eé]ctric|electric|agua|\bgas\b|water|gas natural|energ[ií]a regulad|infraestruct/.test(text) ||
     (input.sic != null && input.sic >= 4900 && input.sic <= 4991)
   ) {
     return { model: 3, reason: "Servicio público regulado o infraestructura energética." };

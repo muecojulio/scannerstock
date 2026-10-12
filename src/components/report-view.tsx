@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { money } from "@/lib/finance/diagnose";
+import { reportToMarkdown } from "@/lib/finance/format";
 import { useDesk } from "@/lib/desk";
 
 const TONE: Record<string, string> = {
@@ -13,10 +14,21 @@ export function ReportView() {
   const result = useDesk((state) => state.result);
   const ready = useDesk((state) => state.ready);
   const hydrate = useDesk((state) => state.hydrate);
+  const [copied, setCopied] = useState<"idle" | "ok" | "error">("idle");
 
   useEffect(() => {
     hydrate();
   }, [hydrate]);
+
+  async function copyReport(text: string) {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied("ok");
+    } catch {
+      setCopied("error");
+    }
+    window.setTimeout(() => setCopied("idle"), 2000);
+  }
 
   if (!ready) return <p className="text-sm text-stone">Abriendo el informe…</p>;
 
@@ -77,8 +89,19 @@ export function ReportView() {
         ["Sostenibilidad del flujo de efectivo", report.flujo],
       ]} />
 
-      <List title="Puntos fuertes" items={report.pros} tone="text-pine" />
-      <List title="Alertas rojas" items={report.contras} tone="text-clay" />
+      <section className="space-y-3">
+        <h2 className="font-display text-xl">Puntos fuertes y alertas rojas</h2>
+        <List title="Puntos fuertes (pros)" items={report.pros} tone="text-pine" />
+        <List title="Alertas rojas (contras / riesgos)" items={report.contras} tone="text-clay" />
+      </section>
+
+      <button
+        type="button"
+        onClick={() => copyReport(reportToMarkdown({ ticker: result.ticker, company: result.company, report }))}
+        className="press press-active min-h-11 w-full rounded-2xl border border-line bg-panel px-4 text-sm font-medium text-ivory"
+      >
+        {copied === "ok" ? "Informe copiado" : copied === "error" ? "No se pudo copiar" : "Copiar informe en formato Markdown"}
+      </button>
 
       <p className="text-[11px] leading-relaxed text-stone">
         Periodo base {report.metrics.period ?? "n/d"}. FCF {money(report.metrics.fcf)}. {result.sourceNote}{" "}
@@ -105,7 +128,7 @@ function Section({ title, items }: { title: string; items: Array<[string, string
 function List({ title, items, tone }: { title: string; items: string[]; tone: string }) {
   return (
     <section>
-      <h2 className="font-display text-xl">{title}</h2>
+      <h3 className="text-sm text-copper">{title}</h3>
       <ul className="mt-2 space-y-2">
         {items.map((item) => (
           <li key={item} className="rounded-2xl border border-line bg-panel px-4 py-3 text-sm leading-relaxed">
