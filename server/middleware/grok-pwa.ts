@@ -16,6 +16,7 @@
  */
 import installPageTemplate from "../../scripts/install-page.html?raw";
 import { grokOgIdentity } from "virtual:grok-og-identity";
+import { securityInputFor, withSecurityHeaders } from "../security-headers";
 import {
   acceptsHtml,
   createHeadInjector,
@@ -70,13 +71,18 @@ export default async function grokPwaMiddleware(
   const path = event.url.pathname;
   const urlWithQuery = path + event.url.search;
 
+  // Estas dos rutas responden sin llamar a `next()`, así que no pasan por el
+  // middleware de cabeceras de seguridad (que va después): se las ponemos aquí.
   if (path === "/__grok/manifest.webmanifest" || path === "/__grok/manifest.json") {
-    return new Response(renderWebManifest(requestHost(event)), {
-      headers: {
-        "content-type": "application/manifest+json; charset=utf-8",
-        "cache-control": "no-cache",
-      },
-    });
+    return withSecurityHeaders(
+      new Response(renderWebManifest(requestHost(event)), {
+        headers: {
+          "content-type": "application/manifest+json; charset=utf-8",
+          "cache-control": "no-cache",
+        },
+      }),
+      securityInputFor(event),
+    );
   }
 
   if (
@@ -88,12 +94,15 @@ export default async function grokPwaMiddleware(
       host: requestHost(event),
       url: urlWithQuery,
     });
-    return new Response(html, {
-      headers: {
-        "content-type": "text/html; charset=utf-8",
-        "cache-control": "no-cache",
-      },
-    });
+    return withSecurityHeaders(
+      new Response(html, {
+        headers: {
+          "content-type": "text/html; charset=utf-8",
+          "cache-control": "no-cache",
+        },
+      }),
+      securityInputFor(event),
+    );
   }
 
   if (!isDocumentPath(path)) return next();

@@ -7,6 +7,7 @@ import type {
   Snapshot,
   Verdict,
 } from "./types";
+import { classifySic } from "./sic.ts";
 
 const DAY = 86_400_000;
 
@@ -294,26 +295,29 @@ export function routeModel(input: {
   if (input.forced) {
     return { model: input.forced, reason: "Modelo elegido de forma manual." };
   }
+  // 1) El SIC manda cuando es concluyente: es la clasificación oficial de la
+  //    actividad, no una palabra del nombre. La tabla viene del SIC Manual.
+  const classified = classifySic(input.sic);
+  if (classified.model) return { model: classified.model, reason: classified.reason };
+  // 2) Sin SIC concluyente, el sector escrito o la descripción pública. Aquí NO
+  //    se inyecta la descripción del grupo mayor: "Oil And Gas Extraction"
+  //    (1311) o "Real Estate" (65xx) arrastrarían a petroleras y a inmobiliarias
+  //    operativas a modelos cuyas reglas no les aplican.
   const text = `${input.sectorText} ${input.sicDescription} ${input.name}`.toLowerCase();
-  if (/reit|inmobiliari|fideicomiso|real estate|bienes ra[ií]ces/.test(text) || input.sic === 6798) {
+  if (/reit|inmobiliari|fideicomiso|real estate|bienes ra[ií]ces/.test(text)) {
     return { model: 4, reason: "Actividad de alquiler o fideicomiso inmobiliario." };
   }
   if (/fintech|software|tecnolog/.test(text) && !/banco|bank/.test(text)) {
     return { model: 1, reason: "Actividad comercial o tecnológica, no un banco tradicional." };
   }
-  if (
-    /banco|bank|instituci[oó]n financiera|servicios financieros|cr[eé]dito comercial|banca/.test(text) ||
-    (input.sic != null && ((input.sic >= 6020 && input.sic <= 6069) || (input.sic >= 6090 && input.sic <= 6099) || input.sic === 6712 || input.sic === 6211))
-  ) {
-    return { model: 2, reason: "Institución financiera tradicional según sector o SIC." };
+  if (/banco|bank|instituci[oó]n financiera|servicios financieros|cr[eé]dito comercial|banca/.test(text)) {
+    return { model: 2, reason: "Institución financiera tradicional según el sector declarado." };
   }
-  if (
-    /utilit|el[eé]ctric|electric|agua|\bgas\b|water|gas natural|energ[ií]a regulad|infraestruct/.test(text) ||
-    (input.sic != null && input.sic >= 4900 && input.sic <= 4991)
-  ) {
+  if (/utilit|el[eé]ctric|electric|agua|\bgas\b|water|gas natural|energ[ií]a regulad|infraestruct/.test(text)) {
     return { model: 3, reason: "Servicio público regulado o infraestructura energética." };
   }
-  return { model: 1, reason: "Sector comercial estándar: productos o servicios." };
+  const code = input.sic == null ? "" : ` SIC ${String(input.sic).padStart(4, "0")}`;
+  return { model: 1, reason: `Sector comercial estándar: productos o servicios.${code}` };
 }
 
 function pushGap(list: string[], label: string, value: number | null) {

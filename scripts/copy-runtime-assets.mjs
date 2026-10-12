@@ -83,8 +83,14 @@ export function functionBundleDirs(functionsDir) {
     .filter((dir) => statSync(dir).isDirectory());
 }
 
-/** Every regular file under `dir`, without following symlinks. */
+/**
+ * Every regular file under `dir`, without following symlinks.
+ * A missing `dir` yields nothing instead of throwing: callers probe build output
+ * that legitimately does not exist until a build has run (`npm test` on a clean
+ * checkout must not fail because `.vercel/output` is absent).
+ */
 function* walkFiles(dir) {
+  if (!existsSync(dir)) return;
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     const path = join(dir, entry.name);
     if (entry.isSymbolicLink()) continue;
