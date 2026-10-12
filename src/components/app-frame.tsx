@@ -1,13 +1,22 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { BookOpen, FileText, History, ScanSearch } from "lucide-react";
+import { BookOpen, FileText, History, QrCode, ScanSearch, ShieldCheck } from "lucide-react";
 import type { CSSProperties, ReactNode } from "react";
 import { Badge } from "@/components/ui/status";
 
+/*
+ * Seis secciones, en el orden en que se usan: escanear, leer el informe, mirar
+ * el historial, entender el método, y luego las dos de servicio: la política de
+ * privacidad (que antes era un enlace de la cabecera) y el QR para pasar la app
+ * a otro dispositivo. La barra reparte el ancho entre todas: ver `.nav-pill` en
+ * `src/styles.css`, que se coloca con la cuenta de columnas, no midiendo el DOM.
+ */
 const TABS = [
   { id: "escanear", href: "/", label: "Escanear", icon: ScanSearch },
   { id: "informe", href: "/informe", label: "Informe", icon: FileText },
   { id: "historial", href: "/historial", label: "Historial", icon: History },
   { id: "metodo", href: "/metodo", label: "Método", icon: BookOpen },
+  { id: "privacidad", href: "/privacidad", label: "Privacidad", icon: ShieldCheck },
+  { id: "qr", href: "/qr", label: "QR", icon: QrCode },
 ] as const;
 
 /** Frases de la cinta del encabezado. Decorativa: no informa de nada nuevo. */
@@ -81,9 +90,6 @@ export function AppFrame({ children }: { children: ReactNode }) {
             <Badge tone="live" pulse>
               SEC
             </Badge>
-            <Link to="/privacidad" className="btn btn-sm btn-ghost">
-              Privacidad
-            </Link>
           </div>
         </div>
 
@@ -111,12 +117,18 @@ export function AppFrame({ children }: { children: ReactNode }) {
         className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-ink/95 backdrop-blur-md"
       >
         <div
-          className="nav-track relative mx-auto grid max-w-lg grid-cols-4 px-2 pt-2 pb-[max(0.6rem,env(safe-area-inset-bottom))]"
-          style={{ "--nav-index": index } as CSSProperties}
+          className="nav-track relative mx-auto grid max-w-lg px-2 pt-2 pb-[max(0.6rem,env(safe-area-inset-bottom))]"
+          style={
+            {
+              "--nav-index": index,
+              "--nav-count": TABS.length,
+              gridTemplateColumns: `repeat(${TABS.length}, minmax(0, 1fr))`,
+            } as CSSProperties
+          }
         >
-          {/* La cuadrícula reparte las cuatro secciones por igual, así que la
-              píldora se coloca con aritmética y no con medidas del DOM: se
-              desliza igual en el primer render del servidor. */}
+          {/* Todas las secciones ocupan lo mismo, así que la píldora se coloca
+              con aritmética y no con medidas del DOM: se desliza igual en el
+              primer render del servidor. */}
           <span className="nav-pill" aria-hidden="true" />
           {TABS.map((tab) => {
             const active = tab.href === path;
@@ -129,7 +141,7 @@ export function AppFrame({ children }: { children: ReactNode }) {
                 className="nav-item"
               >
                 <Icon size={19} strokeWidth={active ? 2.2 : 1.7} aria-hidden="true" />
-                {tab.label}
+                <span className="nav-label">{tab.label}</span>
               </Link>
             );
           })}

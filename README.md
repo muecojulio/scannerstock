@@ -61,7 +61,7 @@ Un sistema, no parches por pantalla. Todo vive en dos sitios y se reutiliza:
 | Dónde | Qué hay |
 | --- | --- |
 | `src/styles.css` | tokens (color, sombra, movimiento, radios), capa base (foco, tacto, scroll) y la capa de componentes: `.btn`, `.chip`, `.surface`, `.tab-list`/`.tab-indicator`, `.lane*`, `.swipe-row`/`.swipe-content`, `.field`, `.badge`, `.skeleton`, `.stage*`, `.nav-pill`, `.meter`. |
-| `src/components/ui/*` | `action-button` (inactivo, cargando, éxito, error, apagado), `tabs` (patrón APG con píldora deslizante y swipe), `lane` (`ChipLane` como grupo de radios y `Lane` de tarjetas), `swipe-row` (acciones al deslizar, con botón explícito), `combobox` (búsqueda sin acentos ni mayúsculas), `field` (`TextField`, `SwitchField`, `Disclosure`), `motion` (`Reveal`, `SpotlightCard`) y `status` (región en vivo, giro, esqueleto, insignia, medidor). |
+| `src/components/ui/*` | `action-button` (inactivo, cargando, éxito, error, apagado), `tabs` (patrón APG con píldora deslizante y swipe), `lane` (`ChipLane` como grupo de radios y `Lane` de tarjetas), `swipe-row` (acciones al deslizar, con botón explícito), `combobox` (búsqueda sin acentos ni mayúsculas), `field` (`TextField`, `SwitchField`, `Disclosure`), `motion` (`Reveal`, `SpotlightCard`), `qr` (el código QR en SVG, vectorial y sin peticiones) y `status` (región en vivo, giro, esqueleto, insignia, medidor). |
 | `src/lib/ui/gestures.ts` | reglas puras y probadas: eje del gesto (proporción 1.2, distancia y velocidad), controles que nunca inician gesto, umbral de apertura de una fila, paso de foco en pestañas (flechas, Inicio, Fin), normalización de texto y bordes de desbordamiento de un carril. |
 | `src/lib/ui/hooks.ts` | `useIndicator` (mueve la píldora midiendo el elemento activo), `useLaneEdges`, `useSwipeGesture` (bloqueo de eje, recorte, clic suprimido tras arrastrar), `useActionStatus`, `useInView`, `useOutsidePointer`, `usePrefersReducedMotion`. |
 
@@ -74,7 +74,8 @@ Decisiones que conviene no deshacer:
 - **`touch-action` con cuidado**: `pan-y` se declara solo en los paneles de pestañas y en las filas deslizables, que no alojan carriles. No se pone en `<main>` a propósito: el comportamiento táctil efectivo es la intersección con los ancestros hasta el contenedor de scroll, y un `pan-y` en la página dejaría a los carriles de dentro sin desplazamiento nativo con el dedo.
 - **Carriles nativos**: `scroll-snap` moderado, barra oculta solo visualmente, indicadores de desbordamiento que aparecen únicamente cuando hay contenido fuera, y centrado de la opción activa (inmediato con movimiento reducido).
 - **Movimiento reducido**: un solo bloque al final de `src/styles.css` apaga animaciones y transiciones decorativas y deja el contenido visible; los estados siguen existiendo aunque no se animen.
-- **Sin dependencias nuevas**: las animaciones son CSS más tres hooks; los únicos primitivos externos son Radix Switch y los iconos de Lucide, que ya estaban.
+- **Sin dependencias nuevas**: las animaciones son CSS más tres hooks; el código QR se codifica a mano (`src/lib/qr/encode.ts`); los únicos primitivos externos son Radix Switch y los iconos de Lucide, que ya estaban.
+- **La barra inferior reparte N columnas**: `app-frame.tsx` declara `--nav-count` y la cuadrícula; `.nav-pill` calcula su ancho con esa cuenta, así que añadir o quitar una sección no toca el CSS. Con seis secciones la etiqueta más larga («Privacidad») usa `clamp()` y, si algún día no cupiera, se recorta con puntos suspensivos en vez de pisar a la vecina.
 
 La lógica de negocio no se tocó: mismas reglas (`src/lib/finance/*`), mismas fuentes, mismo `scanTicker`. Lo único que se añadió es `src/lib/finance/verdict.ts` (tono, etiqueta corta y severidad del veredicto, antes repetidos en cada pantalla) y un `prefill` en `src/lib/desk.ts` para que el historial pueda pedir un reescaneo.
 
@@ -90,8 +91,34 @@ La lógica de negocio no se tocó: mismas reglas (`src/lib/finance/*`), mismas f
 ## Privacidad
 
 La política completa vive en la ruta **`/privacidad`** (`src/routes/privacidad.tsx`),
-enlazada desde la cabecera: qué se guarda, qué se consulta, retención, derechos
-ARCO y medidas de seguridad.
+**una pestaña de la barra inferior** —la cabecera se quedó solo con la marca y
+la insignia de la SEC, porque un enlace legal arriba competía con el escaneo—:
+qué se guarda, qué se consulta, retención, derechos ARCO y medidas de seguridad.
+
+## QR para otro dispositivo
+
+La pestaña **`/qr`** (`src/routes/qr.tsx` + `src/components/qr-panel.tsx`) pasa
+la app a un teléfono, una tablet o un ordenador con cámara. Cuatro piezas:
+
+| Dónde | Qué hace |
+| --- | --- |
+| `src/lib/qr/encode.ts` | Codificador QR propio: ISO/IEC 18004, modo byte, versiones 1–40, los cuatro niveles de corrección y elección de máscara por las cuatro reglas de penalización. Está escrito a mano (no hay dependencia nueva) porque aquí solo se codifica un enlace. |
+| `src/lib/qr/render.ts` | La matriz a SVG y a texto, con la zona de silencio de 4 módulos dentro del dibujo. Puro y probado, así que el que se ve y el que se descarga salen del mismo original. |
+| `src/lib/qr/download.ts` | El PNG (canvas a 1024 px) y el SVG, más la hoja de compartir: en iOS el PNG no se descarga con `download`, se guarda desde `navigator.share({ files })`; en Android y escritorio se descarga el archivo. Cancelar la hoja de compartir no es un error. |
+| `src/lib/public-url.ts` | El origen público que se codifica: `VITE_PUBLIC_HOSTNAME` si existe, si no las cabeceras de la petición y, como último recurso, el origen del navegador. Solo acepta nombres con forma de host; cualquier otra cosa se descarta antes de entrar en el QR. |
+
+El origen se resuelve en el servidor (`src/lib/public-url.functions.ts`) desde el
+`loader` de la ruta, así que el QR ya viene en el HTML y no hay hueco al
+hidratar. El panel corrige con `window.location.origin` en cuanto corre en el
+navegador, por si un proxy mal configurado hace que servidor y cliente no
+coincidan.
+
+`src/lib/qr/encode.test.ts` compara matrices completas contra vectores de
+`qrcode@1.5.4` (hash de la matriz en modo byte, con las ocho máscaras y los
+cuatro niveles), y además se verificó contra `segno` y `jsQR` fuera del repo:
+las tablas de bloques y corrección coinciden con las que cita la norma, las
+máscaras elegidas son las mismas y 218 códigos se leyeron byte a byte. La
+cabecera del test explica de dónde salen los vectores.
 
 ## Publicar en Vercel
 
@@ -130,7 +157,7 @@ cambio y la tabla SIC funcionan sin llave.
 | Comando | Qué hace |
 | --- | --- |
 | `npm run dev` / `npm run build` / `npm run preview` | desarrollo, build de Vercel y preview local. |
-| `npm test` | 116 pruebas, ninguna omitida (finanzas, SIC, veredicto, gestos de interfaz, cotizaciones, cabeceras, migraciones, scripts). |
+| `npm test` | 142 pruebas, ninguna omitida (finanzas, SIC, veredicto, gestos de interfaz, cotizaciones, QR, URL pública, cabeceras, migraciones, scripts). |
 | `npm run typecheck` / `npm run lint` | `tsc --noEmit` y ESLint. |
 | `npm run db:index-check` | mide con EXPLAIN si cada índice conviene. |
 | `npm run vendor:sic` / `vendor:sic:check` | regenera / verifica la tabla SIC desde GitHub. |
