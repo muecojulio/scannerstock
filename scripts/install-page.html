@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="robots" content="noindex" />
+    <meta name="theme-color" content="#121410" />
+    <title>Install {{APP_NAME}}</title>
+    <style>
+      :root {
+        --ink: #121410;
+        --panel: #1c1f1a;
+        --line: #3a3d34;
+        --ivory: #f3f0e8;
+        --stone: #9a978c;
+        --copper: #d4784a;
+        --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        min-height: 100%;
+        background: var(--ink);
+        color: var(--ivory);
+        font-family: var(--sans);
+        -webkit-text-size-adjust: 100%;
+      }
+
+      main {
+        margin: 0 auto;
+        min-height: 100dvh;
+        max-width: 30rem;
+        padding: calc(1.5rem + env(safe-area-inset-top)) 1.5rem
+          calc(2rem + env(safe-area-inset-bottom));
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+        justify-content: center;
+      }
+
+      header {
+        display: grid;
+        gap: 0.375rem;
+      }
+
+      .badge {
+        width: 3.5rem;
+        height: 3.5rem;
+        border-radius: 0.875rem;
+        border: 1px solid var(--line);
+        background: var(--panel);
+        display: grid;
+        place-items: center;
+      }
+
+      .badge svg {
+        width: 2rem;
+        height: 2rem;
+        display: block;
+      }
+
+      h1 {
+        margin: 0.5rem 0 0;
+        font-size: 1.5rem;
+        line-height: 1.2;
+        letter-spacing: -0.01em;
+      }
+
+      p.lede {
+        margin: 0;
+        color: var(--stone);
+        font-size: 0.9375rem;
+        line-height: 1.55;
+      }
+
+      ol {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        display: grid;
+        gap: 0.75rem;
+        counter-reset: step;
+      }
+
+      li {
+        counter-increment: step;
+        display: flex;
+        gap: 0.875rem;
+        align-items: flex-start;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 1rem;
+        padding: 0.875rem 1rem;
+      }
+
+      li::before {
+        content: counter(step);
+        flex: none;
+        width: 1.5rem;
+        height: 1.5rem;
+        border-radius: 999px;
+        background: color-mix(in srgb, var(--copper) 22%, transparent);
+        color: var(--copper);
+        font-size: 0.8125rem;
+        font-weight: 600;
+        display: grid;
+        place-items: center;
+      }
+
+      li span {
+        font-size: 0.9375rem;
+        line-height: 1.5;
+      }
+
+      .key {
+        color: var(--ivory);
+        font-weight: 600;
+      }
+
+      .glyph {
+        display: inline-block;
+        vertical-align: -0.1em;
+        color: var(--copper);
+      }
+
+      footer {
+        display: grid;
+        gap: 0.875rem;
+      }
+
+      a.open {
+        display: block;
+        text-align: center;
+        text-decoration: none;
+        background: var(--copper);
+        color: #1a0f08;
+        font-weight: 600;
+        font-size: 1rem;
+        padding: 0.875rem 1rem;
+        border-radius: 999px;
+      }
+
+      a.open:active {
+        opacity: 0.85;
+      }
+
+      .note {
+        margin: 0;
+        color: var(--stone);
+        font-size: 0.8125rem;
+        line-height: 1.5;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <div class="badge" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path
+              d="M12 3v11m0 0 4-4m-4 4-4-4"
+              stroke="#d4784a"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+            <path d="M4 18h16" stroke="#f3f0e8" stroke-width="2" stroke-linecap="round" />
+          </svg>
+        </div>
+        <h1>Install {{APP_NAME}}</h1>
+        <p class="lede">
+          Add it to your Home Screen and it opens full screen, like a native app.
+        </p>
+      </header>
+
+      <ol>
+        <li>
+          <span
+            >Tap the <span class="glyph">&#8681;</span> <span class="key">Share</span> button in
+            Safari's toolbar.</span
+          >
+        </li>
+        <li>
+          <span
+            >Scroll down and choose
+            <span class="key">Add to Home Screen</span>.</span
+          >
+        </li>
+        <li>
+          <span
+            >Confirm the name, then tap <span class="key">Add</span> in the top-right
+            corner.</span
+          >
+        </li>
+      </ol>
+
+      <footer>
+        <a class="open" href="{{APP_URL}}">Open {{APP_NAME}} in the browser</a>
+        <p class="note">
+          This page is only for installing. Chrome, Firefox and in-app browsers on iOS do not
+          support Home Screen installation — use Safari.
+        </p>
+      </footer>
+    </main>
+  </body>
+</html>
