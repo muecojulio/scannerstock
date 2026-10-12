@@ -73,7 +73,7 @@ async function companies(): Promise<Company[]> {
 
 function cleanTicker(value: string): string {
   const ticker = value.trim().toUpperCase().replace(/\s+/g, "");
-  if (!/^[A-Z0-9][A-Z0-9.\\-]{0,14}$/.test(ticker)) {
+  if (!/^[A-Z0-9][A-Z0-9.\-]{0,14}$/.test(ticker)) {
     throw new Error("Escribe un ticker como AAPL, JPM o NEE.");
   }
   return ticker;
@@ -365,12 +365,7 @@ export const scanTicker = createServerFn({ method: "POST" })
 export const listScans = createServerFn({ method: "GET" }).handler(async () => {
   const { getSql } = await import("@/lib/db");
   const sql = await getSql();
-  return sql<{
-    ticker: string;
-    model: number;
-    verdict: string;
-    scanned_at: string;
-  }>`
+  return sql<{ ticker: string; model: number; verdict: string; scanned_at: string }>`
     select ticker, model, verdict, scanned_at
     from scan_log
     order by scanned_at desc
