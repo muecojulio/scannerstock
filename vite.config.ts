@@ -10,6 +10,7 @@ import { nitro } from "nitro/vite";
 import { grokPwaPlugin } from "./scripts/grok-pwa-plugin.mjs";
 // @ts-expect-error JS plugin alongside the TS vite config
 import { appEnvPlugin } from "./scripts/app-env-plugin.mjs";
+import { securityHeaders } from "./server/security-headers.ts";
 import { isMigrationFile } from "./scripts/migration-plan.mjs";
 
 /** The files `src/lib/db.ts` globs — same directory, same non-recursive scope. */
@@ -142,6 +143,37 @@ function authPopupPlugin(): Plugin {
   };
 }
 
+/**
+ * Cabeceras de seguridad también en `vite dev` y `vite preview`.
+ *
+ * En producción las pone `server/middleware/security-headers.ts` (Nitro). Pero
+ * hay rutas que responden antes de llegar a Nitro — `scripts/grok-pwa-plugin.mjs`
+ * sirve el manifiesto y la página de instalación desde el propio Vite, en dev y
+ * en preview—, y sin este plugin esas respuestas saldrían sin CSP ni nosniff.
+ * La política es la misma función en los tres casos, así no se driftan.
+ */
+function securityHeadersPlugin(dev: boolean): Plugin {
+  const headers = securityHeaders({ dev });
+  const setOn = (res: { setHeader: (name: string, value: string) => void }) => {
+    for (const [name, value] of Object.entries(headers)) res.setHeader(name, value);
+  };
+  return {
+    name: "app-builder:security-headers",
+    configureServer(server) {
+      server.middlewares.use((_req, res, next) => {
+        setOn(res);
+        next();
+      });
+    },
+    configurePreviewServer(server) {
+      server.middlewares.use((_req, res, next) => {
+        setOn(res);
+        next();
+      });
+    },
+  };
+}
+
 // `0.0.0.0:8080` is the live-preview contract — don't change host/port.
 // The dev server starts once `src/router.tsx` and `src/routes/` exist — see
 // AGENTS.md § "First scaffold".
@@ -162,6 +194,10 @@ export default defineConfig(({ command, isPreview }) => ({
   },
   resolve: { tsconfigPaths: true },
   plugins: [
+    // Primero: sus cabeceras deben llegar a toda respuesta, incluida la del
+    // manifiesto PWA que sirve el propio Vite antes que Nitro. El WebSocket de
+    // HMR solo se permite en dev real: `vite preview` simula producción.
+    securityHeadersPlugin(command === "serve" && !isPreview),
     pgliteBootstrapPlugin(),
     // Before tanstackStart so /auth/popup never falls through to the SPA.
     authPopupPlugin(),

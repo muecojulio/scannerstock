@@ -54,6 +54,9 @@ export function ReportView() {
         <h1 className="font-display text-3xl leading-tight">{result.company}</h1>
         <p className="mt-2 text-sm text-stone">
           {result.price != null ? `${result.currency ?? "US$"} ${result.price.toLocaleString("es-MX")}` : "Precio no disponible"}
+          {result.priceUsd != null && result.priceUsd !== result.price
+            ? ` · ≈ US$ ${result.priceUsd.toLocaleString("es-MX", { maximumFractionDigits: 2 })}`
+            : ""}
           {result.sicDescription ? ` · ${result.sicDescription}` : ""}
         </p>
       </header>

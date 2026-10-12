@@ -133,6 +133,8 @@ export function ScanDesk() {
           sicDescription: "",
           price: null,
           currency: null,
+          priceUsd: null,
+          priceSource: "none",
           fetchedAt: new Date().toISOString(),
           fromCache: false,
           routeReason: "Cifras capturadas en el teléfono. No se consultó la SEC.",
@@ -145,7 +147,7 @@ export function ScanDesk() {
         runManual();
         return;
       }
-      const result = await scanTicker({
+      const outcome = await scanTicker({
         data: {
           ticker,
           sector,
@@ -153,7 +155,13 @@ export function ScanDesk() {
           overrides: custom,
         },
       });
-      publish(result);
+      // El servidor devuelve el motivo en vez de lanzar: un throw cruzando el
+      // server fn llega como 500 y el mensaje se pierde.
+      if (!outcome.found) {
+        setError(outcome.error);
+        return;
+      }
+      publish(outcome);
     } catch (caught) {
       const message = caught instanceof Error ? caught.message : "No se pudo completar el escaneo.";
       setError(message);
