@@ -1,5 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useState } from "react";
+import { ChevronDown, FileText, ShieldCheck } from "lucide-react";
 import { AppFrame } from "@/components/app-frame";
+import { SpotlightCard } from "@/components/ui/motion";
+import { Badge } from "@/components/ui/status";
 
 const UPDATED = "12 de octubre de 2026";
 const CONTACT = "muecojulio@users.noreply.github.com";
@@ -98,46 +102,85 @@ export const Route = createFileRoute("/privacidad")({
     ],
   }),
   component: function Privacidad() {
+    const [open, setOpen] = useState<string[]>([SECTIONS[0]?.title ?? ""]);
+
     return (
       <AppFrame>
-        <article className="space-y-5 text-sm leading-relaxed">
-          <header>
-            <h1 className="font-display text-3xl">Política de privacidad</h1>
-            <p className="mt-2 text-xs tracking-wide text-stone">
+        <article className="space-y-4 text-sm leading-relaxed">
+          <header className="space-y-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge tone="live" icon={ShieldCheck}>
+                Sin rastreo
+              </Badge>
+              <Badge icon={FileText}>Datos públicos</Badge>
+            </div>
+            <h1 className="font-display text-3xl leading-tight">Política de privacidad</h1>
+            <p className="text-xs tracking-wide text-stone">
               Última actualización: {UPDATED} · Contacto: {CONTACT}
             </p>
           </header>
 
-          <p className="rounded-[var(--radius-card)] border border-line bg-panel p-4">
-            ScannerStock consulta filings anuales públicos de la SEC de Estados Unidos y, si está
-            disponible, el precio de mercado de ese mismo ticker. No pide cuenta, no vende datos y no
-            envía tus cifras a modelos de inteligencia artificial ni a automatizaciones externas.
-          </p>
+          <SpotlightCard className="p-4" interactive={false}>
+            ScannerStock consulta filings anuales públicos de la SEC de Estados Unidos y, si está disponible, el
+            precio de mercado de ese mismo ticker. No pide cuenta, no vende datos y no envía tus cifras a modelos de
+            inteligencia artificial ni a automatizaciones externas.
+          </SpotlightCard>
 
-          {SECTIONS.map((section) => (
-            <section key={section.title} className="space-y-2">
-              <h2 className="font-display text-xl">{section.title}</h2>
-              {section.body.map((paragraph) => (
-                <p key={paragraph.slice(0, 48)} className="text-ivory/90">
-                  {paragraph}
-                </p>
-              ))}
-            </section>
-          ))}
+          {/* Cada apartado se pliega con una altura medida: abrir uno largo no
+              da saltos, y el estado accesible va en `aria-expanded`. */}
+          <div className="space-y-2">
+            {SECTIONS.map((section) => {
+              const expanded = open.includes(section.title);
+              const panelId = `privacidad-${section.title.slice(0, 2).replace(/\W/g, "")}-panel`;
+              return (
+                <section key={section.title} className="surface overflow-hidden">
+                  <h2>
+                    <button
+                      type="button"
+                      aria-expanded={expanded}
+                      aria-controls={panelId}
+                      onClick={() =>
+                        setOpen((current) =>
+                          current.includes(section.title)
+                            ? current.filter((title) => title !== section.title)
+                            : [...current, section.title],
+                        )
+                      }
+                      className="flex w-full items-center gap-3 px-4 py-3.5 text-left"
+                    >
+                      <span className="min-w-0 flex-1 font-display text-lg leading-tight">{section.title}</span>
+                      <ChevronDown
+                        size={18}
+                        strokeWidth={2}
+                        aria-hidden="true"
+                        className={`shrink-0 text-stone transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}
+                      />
+                    </button>
+                  </h2>
+                  <div
+                    id={panelId}
+                    hidden={!expanded}
+                    className={`space-y-2 px-4 pb-4 text-ivory/90 ${expanded ? "page-enter" : ""}`}
+                  >
+                    {section.body.map((paragraph) => (
+                      <p key={paragraph.slice(0, 48)}>{paragraph}</p>
+                    ))}
+                  </div>
+                </section>
+              );
+            })}
+          </div>
 
-          <section className="rounded-[var(--radius-card)] border border-clay/40 bg-clay/10 p-4">
+          <SpotlightCard className="border-clay/40 bg-clay/10 p-4" interactive={false}>
             <h2 className="font-display text-xl">No es asesoría de inversión</h2>
             <p className="mt-2">
-              Los umbrales son reglas estrictas: una sola métrica en zona de alerta puede marcar MAL
-              aunque el resto se vea sano. Los datos pueden llegar tarde o incompletos; verifica
-              contra el filing oficial antes de tomar cualquier decisión.
+              Los umbrales son reglas estrictas: una sola métrica en zona de alerta puede marcar MAL aunque el resto se
+              vea sano. Los datos pueden llegar tarde o incompletos; verifica contra el filing oficial antes de tomar
+              cualquier decisión.
             </p>
-          </section>
+          </SpotlightCard>
 
-          <Link
-            to="/"
-            className="press press-active inline-flex min-h-11 items-center rounded-2xl bg-copper px-4 text-sm font-medium text-ink"
-          >
+          <Link to="/" className="btn btn-primary btn-block">
             Volver a escanear
           </Link>
         </article>

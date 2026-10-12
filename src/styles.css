@@ -1,26 +1,190 @@
 @import "tailwindcss";
 
+/*
+ * Sistema visual e interacciones de ScannerStock.
+ *
+ * Tres capas, en este orden:
+ *   1. `@theme`      — tokens (color, sombra, movimiento, radios).
+ *   2. `@layer base` — lo que vale para toda la app (foco, scroll, tacto).
+ *   3. `@layer components` — piezas reutilizables: botón, chip, tarjeta,
+ *      pestaña, campo, carril, esqueleto, insignias y fondo vivo.
+ *
+ * Reglas que no conviene romper:
+ *   - Los nombres de `@theme` que ya usa el JSX (ink, panel, line, ivory,
+ *     stone, copper, pine, clay, sand) se mantienen: la identidad visual no se
+ *     reinventa, se amplía.
+ *   - Ninguna animación decorativa corre con `prefers-reduced-motion: reduce`;
+ *     el bloque final las apaga todas, no una por una.
+ *   - Las transiciones son cortas (120–260 ms) y solo de `transform`,
+ *     `opacity`, `box-shadow` o color: nada que provoque reflujo por cuadro.
+ */
+
 @theme {
   --color-ink: #121410;
+  --color-ink-2: #0c0e0a;
   --color-panel: #1c1f1a;
   --color-panel-2: #262922;
   --color-line: #3a3d34;
+  --color-line-soft: #2a2d25;
   --color-ivory: #f3f0e8;
   --color-stone: #9a978c;
   --color-copper: #d4784a;
   --color-copper-deep: #b86134;
+  --color-copper-soft: #eda87f;
+  --color-ember: #f0b070;
   --color-pine: #9cba86;
   --color-clay: #e07a5f;
   --color-sand: #d4b483;
+
   --font-sans: "Avenir Next", "Segoe UI", sans-serif;
   --font-display: "Iowan Old Style", Palatino, "Palatino Linotype", Georgia, serif;
+
   --radius-card: 1.25rem;
+  --radius-pill: 999px;
+
+  --shadow-lift: 0 10px 24px -14px rgb(0 0 0 / 0.75), 0 1px 0 0 rgb(255 255 255 / 0.04) inset;
+  --shadow-press: 0 2px 6px -4px rgb(0 0 0 / 0.7) inset;
+  --shadow-glow-copper: 0 10px 30px -12px rgb(212 120 74 / 0.55), 0 0 0 1px rgb(212 120 74 / 0.25);
+  --shadow-glow-pine: 0 10px 28px -14px rgb(156 186 134 / 0.45);
+  --shadow-glow-clay: 0 10px 28px -14px rgb(224 122 95 / 0.45);
+
+  --ease-smooth: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-snap: cubic-bezier(0.4, 0, 0.2, 1);
+
+  --animate-rise: rise 460ms var(--ease-smooth) both;
+  --animate-pop: pop 260ms var(--ease-smooth) both;
+  --animate-sweep: sweep 1.2s ease-in-out infinite;
+  --animate-shimmer: shimmer 1.6s linear infinite;
+  --animate-ring: ring 2.6s var(--ease-smooth) infinite;
+  --animate-drift: drift 34s ease-in-out infinite alternate;
+  --animate-tape: tape 46s linear infinite;
+  --animate-draw: draw 900ms var(--ease-smooth) both;
+  --animate-shake: shake 320ms var(--ease-snap) 1;
+  --animate-grow: grow 620ms var(--ease-smooth) both;
+  --animate-breathe: breathe 4.5s ease-in-out infinite;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes sweep {
+  from {
+    transform: translateX(-130%);
+  }
+  to {
+    transform: translateX(130%);
+  }
+}
+
+@keyframes shimmer {
+  from {
+    background-position: -140% 0;
+  }
+  to {
+    background-position: 240% 0;
+  }
+}
+
+@keyframes ring {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.85;
+    transform: scale(1.04);
+  }
+}
+
+@keyframes drift {
+  from {
+    transform: translate3d(-4%, -2%, 0) scale(1);
+  }
+  to {
+    transform: translate3d(5%, 3%, 0) scale(1.12);
+  }
+}
+
+@keyframes tape {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes draw {
+  from {
+    stroke-dashoffset: var(--dash, 600);
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  22% {
+    transform: translateX(-3px);
+  }
+  55% {
+    transform: translateX(2px);
+  }
+  80% {
+    transform: translateX(-1px);
+  }
+}
+
+@keyframes grow {
+  from {
+    transform: scaleY(0.04);
+    opacity: 0.2;
+  }
+  to {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+}
+
+@keyframes breathe {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
 }
 
 @layer base {
-  button:not(:disabled),
-  [role="button"]:not(:disabled) {
-    cursor: pointer;
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
   }
 
   html,
@@ -32,47 +196,1072 @@
   body {
     font-family: var(--font-sans);
     min-height: 100dvh;
+    /* Sin fondo propio: el color queda en el lienzo (html) y las capas
+       decorativas (`.stage`) viven por debajo del contenido pero por encima
+       del lienzo. Un `body` opaco taparía la aurora. */
+    background: transparent;
+    overscroll-behavior-y: none;
+  }
+
+  /* Foco visible en todo lo interactivo, sin depender del color del tema. */
+  :focus-visible {
+    outline: 2px solid var(--color-copper-soft);
+    outline-offset: 2px;
+  }
+
+  /* Controles táctiles: sin el retardo de 300 ms del doble toque. */
+  button,
+  a,
+  [role="button"],
+  [role="tab"],
+  [role="radio"],
+  [role="switch"],
+  [role="option"],
+  summary {
+    touch-action: manipulation;
+  }
+
+  button:not(:disabled),
+  [role="button"]:not(:disabled),
+  [role="tab"],
+  [role="radio"],
+  [role="switch"] {
+    cursor: pointer;
   }
 
   ::selection {
     background: #d4784a55;
   }
-}
 
-@utility press {
-  transition: scale 150ms ease-out, background-color 180ms ease-out, color 180ms ease-out, border-color 180ms ease-out;
-}
+  /* Barras de desplazamiento discretas, del color de la casa. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-line) transparent;
+  }
 
-@utility press-active {
-  &:active:not(:disabled) {
-    scale: 0.96;
+  *::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background: var(--color-line);
+    border-radius: 999px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  /* Los carriles no muestran barra: se desplazan con el gesto y con los
+     controles de desbordamiento (la capacidad de desplazarse sigue ahí). */
+  .lane-track,
+  .tab-list,
+  .no-scrollbar {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .lane-track::-webkit-scrollbar,
+  .tab-list::-webkit-scrollbar,
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
   }
 }
 
-.rise {
-  animation: rise 420ms ease-out both;
+@layer components {
+  /* ---------------------------------------------------------------- fondo */
+
+  /* Capas decorativas del "escenario": aurora lenta, retícula y grano.
+     Todo `aria-hidden` en el DOM y desactivado con movimiento reducido. */
+  .stage {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    overflow: hidden;
+  }
+
+  .stage-aurora {
+    position: absolute;
+    inset: -20% -10% -10%;
+    background:
+      radial-gradient(120% 70% at 12% -8%, rgb(212 120 74 / 0.16), transparent 60%),
+      radial-gradient(38% 30% at 18% 12%, rgb(212 120 74 / 0.35), transparent 70%),
+      radial-gradient(32% 26% at 82% 8%, rgb(156 186 134 / 0.24), transparent 70%),
+      radial-gradient(90% 60% at 96% 4%, rgb(156 186 134 / 0.1), transparent 55%),
+      radial-gradient(46% 34% at 60% 88%, rgb(184 97 52 / 0.28), transparent 72%);
+    filter: blur(46px) saturate(115%);
+    animation: var(--animate-drift);
+  }
+
+  .stage-grid {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(to right, rgb(243 240 232 / 0.045) 1px, transparent 1px),
+      linear-gradient(to bottom, rgb(243 240 232 / 0.045) 1px, transparent 1px);
+    background-size: 44px 44px;
+    mask-image: radial-gradient(120% 80% at 50% 0%, #000 20%, transparent 78%);
+    -webkit-mask-image: radial-gradient(120% 80% at 50% 0%, #000 20%, transparent 78%);
+  }
+
+  .stage-noise {
+    position: absolute;
+    inset: 0;
+    opacity: 0.05;
+    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E");
+  }
+
+  /* --------------------------------------------------------------- botones */
+
+  .btn {
+    --btn-bg: var(--color-panel);
+    --btn-fg: var(--color-ivory);
+    --btn-border: var(--color-line);
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 2.75rem; /* 44 px: objetivo táctil cómodo */
+    padding: 0.7rem 1.1rem;
+    border: 1px solid var(--btn-border);
+    border-radius: var(--radius-card);
+    background: var(--btn-bg);
+    color: var(--btn-fg);
+    font: inherit;
+    font-size: 0.9375rem;
+    font-weight: 500;
+    line-height: 1.15;
+    text-align: center;
+    overflow: hidden;
+    isolation: isolate;
+    -webkit-tap-highlight-color: transparent;
+    transition:
+      transform 140ms var(--ease-snap),
+      box-shadow 180ms var(--ease-smooth),
+      background-color 180ms var(--ease-smooth),
+      border-color 180ms var(--ease-smooth),
+      color 180ms var(--ease-smooth);
+  }
+
+  /* Elevación sutil solo donde hay ratón: en pantalla táctil el hover se
+     queda pegado después del toque y confunde. */
+  @media (hover: hover) and (pointer: fine) {
+    .btn:not(:disabled):not([aria-disabled="true"]):hover {
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-lift);
+      border-color: color-mix(in oklab, var(--color-copper) 45%, var(--color-line));
+    }
+  }
+
+  .btn:not(:disabled):not([aria-disabled="true"]):active {
+    transform: translateY(1px) scale(0.978);
+    box-shadow: var(--shadow-press);
+  }
+
+  .btn:disabled,
+  .btn[aria-disabled="true"]:not([aria-busy="true"]) {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+
+  /* Cargando: sigue nítido y conserva el foco, pero ignora un segundo toque. */
+  .btn[aria-busy="true"] {
+    cursor: progress;
+  }
+
+  .btn-primary {
+    --btn-bg: linear-gradient(135deg, var(--color-copper) 0%, var(--color-copper-deep) 100%);
+    --btn-fg: #1a1005;
+    --btn-border: color-mix(in oklab, var(--color-copper) 55%, transparent);
+    box-shadow: var(--shadow-glow-copper);
+    font-weight: 600;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .btn-primary:not(:disabled):not([aria-disabled="true"]):hover {
+      box-shadow: 0 16px 38px -14px rgb(212 120 74 / 0.75);
+      border-color: var(--color-copper-soft);
+    }
+  }
+
+  .btn-outline {
+    --btn-bg: color-mix(in oklab, var(--color-panel) 88%, transparent);
+  }
+
+  .btn-ghost {
+    --btn-bg: transparent;
+    --btn-border: transparent;
+    --btn-fg: var(--color-stone);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .btn-ghost:not(:disabled):not([aria-disabled="true"]):hover {
+      --btn-bg: color-mix(in oklab, var(--color-panel-2) 70%, transparent);
+      color: var(--color-ivory);
+    }
+  }
+
+  .btn-danger {
+    --btn-bg: color-mix(in oklab, var(--color-clay) 16%, var(--color-panel));
+    --btn-fg: #ffd9cd;
+    --btn-border: color-mix(in oklab, var(--color-clay) 45%, transparent);
+  }
+
+  .btn-sm {
+    min-height: 2.75rem; /* sigue siendo táctil, solo menos ancho */
+    padding: 0.55rem 0.8rem;
+    font-size: 0.8125rem;
+    border-radius: 1rem;
+  }
+
+  .btn-block {
+    width: 100%;
+  }
+
+  /* Onda de pulsación: confirma el toque sin mover el diseño. */
+  .btn-ripple {
+    position: absolute;
+    left: var(--ripple-x, 50%);
+    top: var(--ripple-y, 50%);
+    width: 12px;
+    height: 12px;
+    margin: -6px 0 0 -6px;
+    border-radius: 999px;
+    background: currentColor;
+    opacity: 0.28;
+    transform: scale(0);
+    animation: ripple 520ms var(--ease-smooth) forwards;
+    pointer-events: none;
+    z-index: -1;
+  }
+
+  @keyframes ripple {
+    to {
+      transform: scale(22);
+      opacity: 0;
+    }
+  }
+
+  /* Sacudida discreta para el error: nunca es el único aviso. */
+  .shake {
+    animation: var(--animate-shake);
+  }
+
+  /* --------------------------------------------------------------- chips */
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    min-height: 2.75rem;
+    padding: 0.5rem 0.9rem;
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-pill);
+    background: color-mix(in oklab, var(--color-panel) 92%, transparent);
+    color: var(--color-stone);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    white-space: nowrap;
+    -webkit-tap-highlight-color: transparent;
+    transition:
+      transform 140ms var(--ease-snap),
+      background-color 180ms var(--ease-smooth),
+      border-color 180ms var(--ease-smooth),
+      color 180ms var(--ease-smooth),
+      box-shadow 180ms var(--ease-smooth);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .chip:not(:disabled):hover {
+      color: var(--color-ivory);
+      border-color: color-mix(in oklab, var(--color-copper) 40%, var(--color-line));
+      transform: translateY(-1px);
+    }
+  }
+
+  .chip:not(:disabled):not([aria-disabled="true"]):active {
+    transform: scale(0.96);
+  }
+
+  /* Estado activo: color + borde + peso tipográfico + marca. No solo color. */
+  .chip[data-active="true"],
+  .chip[aria-pressed="true"],
+  .chip[aria-checked="true"] {
+    background: color-mix(in oklab, var(--color-copper) 20%, var(--color-panel));
+    border-color: var(--color-copper);
+    color: var(--color-ivory);
+    font-weight: 600;
+    box-shadow: var(--shadow-glow-copper);
+  }
+
+  .chip:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  /* ------------------------------------------------------------- tarjetas */
+
+  .surface {
+    position: relative;
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-card);
+    background:
+      linear-gradient(180deg, rgb(255 255 255 / 0.03), transparent 42%),
+      color-mix(in oklab, var(--color-panel) 96%, transparent);
+    box-shadow: 0 1px 0 0 rgb(255 255 255 / 0.03) inset;
+  }
+
+  .surface-interactive {
+    transition:
+      transform 200ms var(--ease-smooth),
+      box-shadow 220ms var(--ease-smooth),
+      border-color 220ms var(--ease-smooth);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .surface-interactive:hover {
+      transform: translateY(-2px);
+      border-color: color-mix(in oklab, var(--color-copper) 38%, var(--color-line));
+      box-shadow: var(--shadow-lift);
+    }
+  }
+
+  /* Resplandor que sigue al puntero (idea de las "spotlight cards" de las
+     librerías de componentes de GitHub: Magic UI / Aceternity UI). */
+  .spotlight::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: radial-gradient(
+      240px circle at var(--spot-x, 50%) var(--spot-y, 0%),
+      rgb(212 120 74 / 0.16),
+      transparent 62%
+    );
+    opacity: 0;
+    transition: opacity 240ms var(--ease-smooth);
+    pointer-events: none;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .spotlight:hover::after {
+      opacity: 1;
+    }
+  }
+
+  .selected-ring {
+    border-color: var(--color-copper);
+    box-shadow: var(--shadow-glow-copper);
+  }
+
+  /* Aparición al entrar en pantalla (IntersectionObserver, no por scroll). */
+  .reveal {
+    opacity: 0;
+    transform: translateY(14px);
+    transition:
+      opacity 460ms var(--ease-smooth),
+      transform 460ms var(--ease-smooth);
+    transition-delay: var(--reveal-delay, 0ms);
+  }
+
+  .reveal[data-visible="true"] {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* -------------------------------------------------------------- pestañas */
+
+  .tab-list {
+    position: relative;
+    display: flex;
+    gap: 0.25rem;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-behavior: smooth;
+    padding: 0.25rem;
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-pill);
+    background: color-mix(in oklab, var(--color-panel) 92%, transparent);
+  }
+
+  .tab-indicator {
+    position: absolute;
+    top: 0.25rem;
+    bottom: 0.25rem;
+    left: 0;
+    width: 0;
+    border-radius: var(--radius-pill);
+    background: linear-gradient(135deg, var(--color-copper) 0%, var(--color-copper-deep) 100%);
+    box-shadow: var(--shadow-glow-copper);
+    transform: translateX(var(--tab-indicator-x, 0px));
+    transition:
+      transform 280ms var(--ease-smooth),
+      width 280ms var(--ease-smooth);
+    pointer-events: none;
+  }
+
+  .tab {
+    position: relative;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    min-height: 2.75rem;
+    padding: 0.5rem 0.95rem;
+    border-radius: var(--radius-pill);
+    color: var(--color-stone);
+    font-size: 0.875rem;
+    font-weight: 500;
+    white-space: nowrap;
+    -webkit-tap-highlight-color: transparent;
+    transition: color 200ms var(--ease-smooth);
+  }
+
+  .tab[aria-selected="true"] {
+    color: #1a1005;
+    font-weight: 600;
+  }
+
+  .tab:not([aria-selected="true"]):hover {
+    color: var(--color-ivory);
+  }
+
+  .tab-panel {
+    animation: var(--animate-pop);
+  }
+
+  /* Indicadores de contenido fuera de vista: solo se encienden si el carril
+     de pestañas de verdad desborda. */
+  .tabs-fade {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 1.75rem;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 200ms var(--ease-smooth);
+  }
+
+  .tabs-fade[data-visible="true"] {
+    opacity: 1;
+  }
+
+  .tabs-fade-start {
+    left: 0;
+    border-radius: var(--radius-pill) 0 0 var(--radius-pill);
+    background: linear-gradient(to right, var(--color-panel) 30%, transparent);
+  }
+
+  .tabs-fade-end {
+    right: 0;
+    border-radius: 0 var(--radius-pill) var(--radius-pill) 0;
+    background: linear-gradient(to left, var(--color-panel) 30%, transparent);
+  }
+
+  /* Paneles en fila: se desplazan en horizontal con el gesto o con la pestaña,
+     sin generar nunca scroll horizontal en la página. */
+  .swipe-viewport {
+    position: relative;
+    overflow: hidden;
+    overscroll-behavior-x: none;
+    touch-action: pan-y;
+  }
+
+  .swipe-viewport[data-measured="true"] {
+    transition: height 240ms var(--ease-smooth);
+  }
+
+  .swipe-track {
+    display: flex;
+    align-items: flex-start;
+    width: 100%;
+    transition: transform 260ms var(--ease-smooth);
+  }
+
+  .swipe-viewport[data-dragging="true"] .swipe-track {
+    transition: none;
+    will-change: transform;
+  }
+
+  .swipe-panel {
+    flex: 0 0 100%;
+    min-width: 0;
+  }
+
+  /* --------------------------------------------------------------- campos */
+
+  .field {
+    width: 100%;
+    min-height: 2.75rem;
+    padding: 0.7rem 0.9rem;
+    border: 1px solid var(--color-line);
+    border-radius: 1rem;
+    background: color-mix(in oklab, var(--color-ink) 88%, black);
+    color: var(--color-ivory);
+    font: inherit;
+    font-size: 1rem; /* 16 px: iOS no hace zoom al enfocar */
+    caret-color: var(--color-copper);
+    transition:
+      border-color 180ms var(--ease-smooth),
+      box-shadow 180ms var(--ease-smooth),
+      background-color 180ms var(--ease-smooth);
+  }
+
+  .field::placeholder {
+    color: color-mix(in oklab, var(--color-stone) 80%, transparent);
+  }
+
+  .field:hover {
+    border-color: color-mix(in oklab, var(--color-copper) 26%, var(--color-line));
+  }
+
+  /* Halo discreto de foco: borde + sombra, sin cambiar el tamaño. */
+  .field:focus,
+  .field:focus-visible {
+    outline: none;
+    border-color: var(--color-copper);
+    box-shadow: 0 0 0 3px rgb(212 120 74 / 0.22);
+  }
+
+  .field[aria-invalid="true"] {
+    border-color: var(--color-clay);
+    box-shadow: 0 0 0 3px rgb(224 122 95 / 0.2);
+  }
+
+  /* Espacio a la derecha para los controles del campo (limpiar, abrir lista). */
+  .field-with-actions {
+    padding-right: 6.25rem;
+  }
+
+  .field-label {
+    display: block;
+    font-size: 0.75rem;
+    letter-spacing: 0.02em;
+    color: var(--color-stone);
+  }
+
+  /* --------------------------------------------------------------- listas */
+
+  .option {
+    display: flex;
+    width: 100%;
+    min-height: 2.75rem;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.65rem 0.85rem;
+    text-align: left;
+    color: var(--color-ivory);
+    transition: background-color 140ms var(--ease-smooth);
+  }
+
+  .option[data-active="true"] {
+    background: color-mix(in oklab, var(--color-copper) 16%, transparent);
+  }
+
+  .option[aria-selected="true"] {
+    font-weight: 600;
+  }
+
+  /* ------------------------------------------------------------- carriles */
+
+  .lane {
+    position: relative;
+  }
+
+  .lane-track {
+    display: flex;
+    gap: 0.6rem;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x proximity;
+    scroll-padding-inline: 4px;
+    padding: 0.15rem 4px 0.5rem;
+    margin-inline: -4px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .lane-item {
+    scroll-snap-align: start;
+    flex: 0 0 auto;
+  }
+
+  .lane-cards .lane-item {
+    flex-basis: min(78%, 15rem);
+    scroll-snap-align: center;
+  }
+
+  /* Señal de desbordamiento: se enciende solo cuando hay contenido fuera. */
+  .lane-fade {
+    position: absolute;
+    top: 0;
+    bottom: 0.35rem;
+    width: 2.25rem;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 200ms var(--ease-smooth);
+  }
+
+  .lane-fade[data-visible="true"] {
+    opacity: 1;
+  }
+
+  .lane-fade-start {
+    left: -4px;
+    background: linear-gradient(to right, var(--color-ink) 22%, transparent);
+  }
+
+  .lane-fade-end {
+    right: -4px;
+    background: linear-gradient(to left, var(--color-ink) 22%, transparent);
+  }
+
+  .lane-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    min-height: 1.75rem;
+    margin-bottom: 0.35rem;
+  }
+
+  .lane-hint {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.6875rem;
+    color: var(--color-stone);
+  }
+
+  /* La pista de gesto solo tiene sentido con el dedo. */
+  .lane-hint-coarse {
+    display: none;
+  }
+
+  @media (pointer: coarse) {
+    .lane-hint-coarse[data-visible="true"] {
+      display: flex;
+    }
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .lane-hint-coarse {
+      display: none !important;
+    }
+  }
+
+  .lane-controls {
+    display: flex;
+    gap: 0.35rem;
+  }
+
+  .lane-control {
+    display: grid;
+    place-items: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border: 1px solid var(--color-line);
+    border-radius: 999px;
+    background: color-mix(in oklab, var(--color-panel) 92%, transparent);
+    color: var(--color-stone);
+    transition:
+      color 160ms var(--ease-smooth),
+      border-color 160ms var(--ease-smooth),
+      transform 140ms var(--ease-snap);
+  }
+
+  .lane-control:active {
+    transform: scale(0.92);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .lane-control:hover:not(:disabled) {
+      color: var(--color-ivory);
+      border-color: var(--color-copper);
+    }
+  }
+
+  .lane-control:disabled {
+    opacity: 0.35;
+    cursor: default;
+  }
+
+  /* En pantallas grandes el carril se vuelve cuadrícula: comparar en
+     horizontal deja de tener sentido cuando todo cabe. */
+  @media (min-width: 640px) {
+    .lane-cards .lane-track {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      overflow: visible;
+      scroll-snap-type: none;
+    }
+
+    .lane-cards .lane-item {
+      flex-basis: auto;
+    }
+
+    .lane-cards .lane-fade,
+    .lane-cards .lane-controls {
+      display: none;
+    }
+  }
+
+  /* --------------------------------------------- swipe para revelar acciones */
+
+  .swipe-row {
+    position: relative;
+    border-radius: var(--radius-card);
+    overflow: hidden;
+  }
+
+  .swipe-actions {
+    position: absolute;
+    inset-block: 0;
+    right: 0;
+    display: flex;
+  }
+
+  .swipe-action {
+    display: grid;
+    place-items: center;
+    gap: 0.2rem;
+    width: var(--swipe-action-width, 5.25rem);
+    padding: 0.4rem;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    color: #17140f;
+  }
+
+  .swipe-action-scan {
+    background: linear-gradient(160deg, var(--color-copper), var(--color-copper-deep));
+  }
+
+  .swipe-action-copy {
+    background: linear-gradient(160deg, var(--color-pine), #7fa068);
+  }
+
+  .swipe-content {
+    position: relative;
+    /* Mismo acabado que `.surface`: el contenido tapa las acciones sin
+       cambiar el tono de la tarjeta. */
+    background:
+      linear-gradient(180deg, rgb(255 255 255 / 0.03), transparent 42%),
+      var(--color-panel);
+    touch-action: pan-y;
+    transition: transform 240ms var(--ease-smooth);
+  }
+
+  .swipe-content[data-dragging="true"] {
+    transition: none;
+  }
+
+  /* Control visible para abrir y cerrar las acciones: el gesto nunca es la
+     única puerta. Acompaña al contenido cuando este se desplaza. */
+  .swipe-toggle {
+    display: grid;
+    place-items: center;
+    min-width: 2.75rem;
+    border-left: 1px solid var(--color-line);
+    background: color-mix(in oklab, var(--color-panel-2) 55%, transparent);
+    color: var(--color-stone);
+    transition:
+      color 180ms var(--ease-smooth),
+      background-color 180ms var(--ease-smooth);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .swipe-toggle:hover {
+      color: var(--color-ivory);
+      background: color-mix(in oklab, var(--color-panel-2) 90%, transparent);
+    }
+  }
+
+  /* En escritorio (mismo corte que `md:` de Tailwind) las acciones se muestran
+     directamente: el swipe es un gesto táctil. */
+  @media (min-width: 768px) {
+    .swipe-row {
+      overflow: visible;
+    }
+
+    .swipe-row .swipe-content {
+      transform: none !important;
+    }
+  }
+
+  /* --------------------------------------------------------- marco / nav */
+
+  /* Filo encendido bajo la cabecera: la app se ve "prendida", no plana. */
+  .app-header::after {
+    content: "";
+    position: absolute;
+    inset-inline: 0;
+    bottom: -1px;
+    height: 1px;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      color-mix(in oklab, var(--color-copper) 75%, transparent),
+      transparent
+    );
+  }
+
+  /* Píldora que se desliza al elemento activo del navegador inferior. La
+     cuadrícula reparte cuatro columnas iguales, así que basta con mover el
+     100% de su propio ancho por índice activo. */
+  .nav-track {
+    --nav-gutter: 0.5rem;
+  }
+
+  .nav-pill {
+    position: absolute;
+    top: 0.5rem;
+    bottom: calc(max(0.6rem, env(safe-area-inset-bottom)) + 0.15rem);
+    left: var(--nav-gutter);
+    width: calc((100% - var(--nav-gutter) * 2) / 4);
+    border-radius: 1rem;
+    background: linear-gradient(180deg, rgb(212 120 74 / 0.24), rgb(212 120 74 / 0.05));
+    box-shadow: inset 0 0 0 1px rgb(212 120 74 / 0.4);
+    pointer-events: none;
+    transform: translateX(calc(var(--nav-index, 0) * 100%));
+    transition: transform 320ms var(--ease-smooth);
+  }
+
+  /* Ninguna capa de la página restringe el tacto: `touch-action: pan-y` en el
+     contenedor de scroll recortaría el desplazamiento horizontal de los
+     carriles que viven dentro (la intersección de `touch-action` llega hasta el
+     contenedor de scroll más cercano). Por eso `pan-y` se declara solo en las
+     dos regiones que se quedan con el gesto lateral y no alojan carriles:
+     `.swipe-viewport` (paneles de pestañas) y `.swipe-content` (filas
+     deslizables). Si algún día se mete un carril dentro de un panel, hay que
+     devolverle su propio `touch-action`. */
+
+  .nav-item {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    min-height: 2.75rem;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    border-radius: 1rem;
+    color: var(--color-stone);
+    font-size: 0.6875rem;
+    font-weight: 500;
+    transition:
+      color 200ms var(--ease-smooth),
+      transform 160ms var(--ease-snap);
+  }
+
+  .nav-item[aria-current="page"] {
+    color: var(--color-copper-soft);
+    font-weight: 600;
+  }
+
+  .nav-item[aria-current="page"] svg {
+    transform: translateY(-1px) scale(1.08);
+    transition: transform 220ms var(--ease-smooth);
+  }
+
+  .nav-item:active {
+    transform: scale(0.94);
+  }
+
+  /* Entrada de página: corta, hacia arriba y una sola vez. */
+  .page-enter {
+    animation: var(--animate-rise);
+  }
+
+  /* --------------------------------------------------------------- varios */
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.2rem 0.55rem;
+    border: 1px solid var(--color-line);
+    border-radius: 999px;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+  }
+
+  .badge-good {
+    color: var(--color-pine);
+    border-color: color-mix(in oklab, var(--color-pine) 45%, transparent);
+    background: color-mix(in oklab, var(--color-pine) 14%, transparent);
+  }
+
+  .badge-bad {
+    color: var(--color-clay);
+    border-color: color-mix(in oklab, var(--color-clay) 45%, transparent);
+    background: color-mix(in oklab, var(--color-clay) 14%, transparent);
+  }
+
+  .badge-warn {
+    color: var(--color-sand);
+    border-color: color-mix(in oklab, var(--color-sand) 45%, transparent);
+    background: color-mix(in oklab, var(--color-sand) 14%, transparent);
+  }
+
+  .badge-live {
+    color: var(--color-copper-soft);
+    border-color: color-mix(in oklab, var(--color-copper) 45%, transparent);
+    background: color-mix(in oklab, var(--color-copper) 12%, transparent);
+  }
+
+  .pulse-dot {
+    position: relative;
+    width: 0.45rem;
+    height: 0.45rem;
+    border-radius: 999px;
+    background: currentColor;
+  }
+
+  .pulse-dot::after {
+    content: "";
+    position: absolute;
+    inset: -3px;
+    border-radius: 999px;
+    border: 1px solid currentColor;
+    opacity: 0;
+    animation: var(--animate-ring);
+  }
+
+  .skeleton {
+    border-radius: 0.75rem;
+    background:
+      linear-gradient(90deg, transparent 0%, rgb(243 240 232 / 0.09) 45%, transparent 90%)
+        var(--color-panel-2);
+    background-size: 220% 100%;
+    animation: var(--animate-shimmer);
+  }
+
+  .skeleton-line {
+    height: 0.75rem;
+  }
+
+  .scanline {
+    background: linear-gradient(90deg, transparent, var(--color-ember), transparent);
+    animation: var(--animate-sweep);
+  }
+
+  /* Cinta de datos del encabezado: decorativa, lenta y en pausa al enfocar. */
+  .tape {
+    position: relative;
+    overflow: hidden;
+    mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent);
+    -webkit-mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent);
+  }
+
+  .tape-track {
+    display: flex;
+    width: max-content;
+    gap: 1.75rem;
+    animation: var(--animate-tape);
+  }
+
+  .tape:hover .tape-track,
+  .tape:focus-within .tape-track {
+    animation-play-state: paused;
+  }
+
+  /* Marca de la aplicación con halo pulsante una sola vez al entrar. */
+  .brand-mark {
+    position: relative;
+    display: grid;
+    place-items: center;
+    border-radius: 0.9rem;
+    background: linear-gradient(140deg, var(--color-copper), var(--color-copper-deep));
+    color: #1a1005;
+    box-shadow: var(--shadow-glow-copper);
+  }
+
+  .text-gradient-copper {
+    background: linear-gradient(100deg, var(--color-copper-soft), var(--color-ember) 40%, var(--color-copper) 85%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* Barra de progreso fina (progreso de escaneo, distribución de veredictos) */
+  .meter {
+    height: 0.35rem;
+    border-radius: 999px;
+    background: color-mix(in oklab, var(--color-line) 60%, transparent);
+    overflow: hidden;
+  }
+
+  .meter-fill {
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--color-copper), var(--color-ember));
+    transition: width 600ms var(--ease-smooth);
+  }
+
+  .stat-value {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
+  }
+
+  .skip-link {
+    position: absolute;
+    left: 0.75rem;
+    top: 0.5rem;
+    z-index: 50;
+    transform: translateY(-160%);
+    border-radius: 0.75rem;
+    background: var(--color-copper);
+    color: #17140f;
+    padding: 0.6rem 0.9rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    transition: transform 200ms var(--ease-smooth);
+  }
+
+  .skip-link:focus-visible {
+    transform: translateY(0);
+  }
 }
 
-.rise-2 { animation-delay: 80ms; }
-.rise-3 { animation-delay: 160ms; }
-
-@keyframes rise {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.scanline {
-  background: linear-gradient(90deg, transparent, #d4784a, transparent);
-  animation: sweep 1.1s ease-in-out infinite;
-}
-
-@keyframes sweep {
-  from { transform: translateX(-120%); }
-  to { transform: translateX(120%); }
-}
-
+/* Movimiento reducido: se apaga todo lo decorativo y se acortan las
+   transiciones, sin quitar información (los estados siguen existiendo). */
 @media (prefers-reduced-motion: reduce) {
-  .rise, .scanline {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .stage-aurora {
     animation: none;
+    transform: none;
+  }
+
+  .tape-track {
+    animation: none;
+  }
+
+  .reveal {
+    opacity: 1;
+    transform: none;
+  }
+
+  .lane-track {
+    scroll-snap-type: none;
   }
 }

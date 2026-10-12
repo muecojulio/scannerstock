@@ -54,6 +54,30 @@ carga 11,000 emisores y mide cada índice puesto y quitado).
 | índice cubridor con `INCLUDE (ticker, model, verdict)` | 0.9–1.0×: no mide nada y cuesta escrituras. **No se añadió.** |
 | `scan_log_ticker_idx (ticker)` | ninguna consulta lo usaba. **Eliminado** en `migrations/0003_indexes.sql`. |
 
+## Interfaz e interacciones
+
+Un sistema, no parches por pantalla. Todo vive en dos sitios y se reutiliza:
+
+| Dónde | Qué hay |
+| --- | --- |
+| `src/styles.css` | tokens (color, sombra, movimiento, radios), capa base (foco, tacto, scroll) y la capa de componentes: `.btn`, `.chip`, `.surface`, `.tab-list`/`.tab-indicator`, `.lane*`, `.swipe-row`/`.swipe-content`, `.field`, `.badge`, `.skeleton`, `.stage*`, `.nav-pill`, `.meter`. |
+| `src/components/ui/*` | `action-button` (inactivo, cargando, éxito, error, apagado), `tabs` (patrón APG con píldora deslizante y swipe), `lane` (`ChipLane` como grupo de radios y `Lane` de tarjetas), `swipe-row` (acciones al deslizar, con botón explícito), `combobox` (búsqueda sin acentos ni mayúsculas), `field` (`TextField`, `SwitchField`, `Disclosure`), `motion` (`Reveal`, `SpotlightCard`) y `status` (región en vivo, giro, esqueleto, insignia, medidor). |
+| `src/lib/ui/gestures.ts` | reglas puras y probadas: eje del gesto (proporción 1.2, distancia y velocidad), controles que nunca inician gesto, umbral de apertura de una fila, paso de foco en pestañas (flechas, Inicio, Fin), normalización de texto y bordes de desbordamiento de un carril. |
+| `src/lib/ui/hooks.ts` | `useIndicator` (mueve la píldora midiendo el elemento activo), `useLaneEdges`, `useSwipeGesture` (bloqueo de eje, recorte, clic suprimido tras arrastrar), `useActionStatus`, `useInView`, `useOutsidePointer`, `usePrefersReducedMotion`. |
+
+Decisiones que conviene no deshacer:
+
+- **Objetivos táctiles de 44 px** en botones, chips, botones de icono y controles de carril. El estado activo de un chip nunca es solo color: cambia borde, peso, halo y, si lleva icono, la marca.
+- **Nada depende del `hover`**: la elevación se declara solo en `@media (hover: hover) and (pointer: fine)` y la respuesta al toque es hundimiento, escala corta y sombra más corta.
+- **Estados de acción anunciados**: `aria-busy` mientras carga (sin `disabled`, para no perder el foco), icono y texto en éxito y error, sacudida discreta en el error y región en vivo (`role="status"`; `role="alert"` en el aviso de error).
+- **El swipe nunca es la única puerta**: cada fila deslizable lleva un botón visible (⋯) con `aria-expanded`, y en escritorio las acciones se muestran directamente. Las acciones ocultas están `inert` y `aria-hidden`.
+- **`touch-action` con cuidado**: `pan-y` se declara solo en los paneles de pestañas y en las filas deslizables, que no alojan carriles. No se pone en `<main>` a propósito: el comportamiento táctil efectivo es la intersección con los ancestros hasta el contenedor de scroll, y un `pan-y` en la página dejaría a los carriles de dentro sin desplazamiento nativo con el dedo.
+- **Carriles nativos**: `scroll-snap` moderado, barra oculta solo visualmente, indicadores de desbordamiento que aparecen únicamente cuando hay contenido fuera, y centrado de la opción activa (inmediato con movimiento reducido).
+- **Movimiento reducido**: un solo bloque al final de `src/styles.css` apaga animaciones y transiciones decorativas y deja el contenido visible; los estados siguen existiendo aunque no se animen.
+- **Sin dependencias nuevas**: las animaciones son CSS más tres hooks; los únicos primitivos externos son Radix Switch y los iconos de Lucide, que ya estaban.
+
+La lógica de negocio no se tocó: mismas reglas (`src/lib/finance/*`), mismas fuentes, mismo `scanTicker`. Lo único que se añadió es `src/lib/finance/verdict.ts` (tono, etiqueta corta y severidad del veredicto, antes repetidos en cada pantalla) y un `prefill` en `src/lib/desk.ts` para que el historial pueda pedir un reescaneo.
+
 ## Seguridad
 
 - **Cabeceras** (`server/security-headers.ts`, probado en `server/security-headers.test.ts`): CSP, `X-Content-Type-Options: nosniff`, `Referrer-Policy`, `Permissions-Policy` (cámara, micrófono y geolocalización desactivados), `Cross-Origin-Opener-Policy`, `Cross-Origin-Resource-Policy` y HSTS cuando la petición llega por HTTPS. Las pone el middleware de Nitro en producción y un plugin de Vite en dev/preview, porque el manifiesto PWA responde antes que Nitro.
@@ -106,7 +130,7 @@ cambio y la tabla SIC funcionan sin llave.
 | Comando | Qué hace |
 | --- | --- |
 | `npm run dev` / `npm run build` / `npm run preview` | desarrollo, build de Vercel y preview local. |
-| `npm test` | 87 pruebas (finanzas, SIC, cotizaciones, cabeceras, migraciones, scripts). |
+| `npm test` | 116 pruebas, ninguna omitida (finanzas, SIC, veredicto, gestos de interfaz, cotizaciones, cabeceras, migraciones, scripts). |
 | `npm run typecheck` / `npm run lint` | `tsc --noEmit` y ESLint. |
 | `npm run db:index-check` | mide con EXPLAIN si cada índice conviene. |
 | `npm run vendor:sic` / `vendor:sic:check` | regenera / verifica la tabla SIC desde GitHub. |
