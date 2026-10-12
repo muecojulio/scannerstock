@@ -1,0 +1,78 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ink: #121410;
+  --color-panel: #1c1f1a;
+  --color-panel-2: #262922;
+  --color-line: #3a3d34;
+  --color-ivory: #f3f0e8;
+  --color-stone: #9a978c;
+  --color-copper: #d4784a;
+  --color-copper-deep: #b86134;
+  --color-pine: #9cba86;
+  --color-clay: #e07a5f;
+  --color-sand: #d4b483;
+  --font-sans: "Avenir Next", "Segoe UI", sans-serif;
+  --font-display: "Iowan Old Style", Palatino, "Palatino Linotype", Georgia, serif;
+  --radius-card: 1.25rem;
+}
+
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+
+  html,
+  body {
+    background: var(--color-ink);
+    color: var(--color-ivory);
+  }
+
+  body {
+    font-family: var(--font-sans);
+    min-height: 100dvh;
+  }
+
+  ::selection {
+    background: #d4784a55;
+  }
+}
+
+@utility press {
+  transition: scale 150ms ease-out, background-color 180ms ease-out, color 180ms ease-out, border-color 180ms ease-out;
+}
+
+@utility press-active {
+  &:active:not(:disabled) {
+    scale: 0.96;
+  }
+}
+
+.rise {
+  animation: rise 420ms ease-out both;
+}
+
+.rise-2 { animation-delay: 80ms; }
+.rise-3 { animation-delay: 160ms; }
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.scanline {
+  background: linear-gradient(90deg, transparent, #d4784a, transparent);
+  animation: sweep 1.1s ease-in-out infinite;
+}
+
+@keyframes sweep {
+  from { transform: translateX(-120%); }
+  to { transform: translateX(120%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rise, .scanline {
+    animation: none;
+  }
+}
