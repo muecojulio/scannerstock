@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" role="img" aria-label="ScannerStock">
+  <rect width="16" height="16" rx="3" fill="#121410"/>
+  <rect x="2" y="11" width="12" height="2" fill="#f3f0e8"/>
+  <rect x="3" y="3" width="4" height="2" fill="#d4784a"/>
+  <rect x="3" y="3" width="2" height="6" fill="#d4784a"/>
+  <rect x="9" y="3" width="4" height="2" fill="#d4784a"/>
+  <rect x="11" y="3" width="2" height="6" fill="#d4784a"/>
+  <rect x="7" y="5" width="2" height="9" fill="#d4784a"/>
+</svg>
