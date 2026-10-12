@@ -229,14 +229,22 @@ export function ensureDbReady(): Promise<void> {
 
 // Server-only eager start: kick PGLite bootstrap as soon as this module loads in
 // Node. Client bundles never hit this path (`getSql` throws in the browser).
+//
+// This is a WARM-UP, not a contract, so it must never reject: nothing awaits the
+// promise stored here unless a request happens to call `ensureDbReady()` later,
+// and an unawaited rejection takes the whole Node process down (Node ≥15 exits
+// on unhandled rejections). On a serverless runtime that is not a degraded
+// request — it is every route 500ing, including the ones that never touch the
+// database. `getSql()` keeps the real error, un-memoizes it and retries, so
+// callers still see the failure; here it is only logged.
 const globalBoot = globalThis as typeof globalThis & {
   __pgBootstrapPromise__?: Promise<void>;
 };
 if (typeof window === "undefined" && dbSource === "pglite") {
-  globalBoot.__pgBootstrapPromise__ ??=
-    ensureDbReady().catch((err) => {
-      globalBoot.__pgBootstrapPromise__ = undefined;
-      console.error("[db] PGLite bootstrap failed:", err);
-      throw err;
-    });
+  globalBoot.__pgBootstrapPromise__ ??= ensureDbReady().catch((err) => {
+    // Clear the slot so the next `ensureDbReady()` retries instead of resolving
+    // a warm-up that already failed.
+    globalBoot.__pgBootstrapPromise__ = undefined;
+    console.error("[db] PGLite bootstrap failed:", err);
+  });
 }

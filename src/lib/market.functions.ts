@@ -73,7 +73,7 @@ async function companies(): Promise<Company[]> {
 
 function cleanTicker(value: string): string {
   const ticker = value.trim().toUpperCase().replace(/\s+/g, "");
-  if (!/^[A-Z0-9][A-Z0-9.\-]{0,14}$/.test(ticker)) {
+  if (!/^[A-Z0-9][A-Z0-9.-]{0,14}$/.test(ticker)) {
     throw new Error("Escribe un ticker como AAPL, JPM o NEE.");
   }
   return ticker;
